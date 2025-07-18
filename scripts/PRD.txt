@@ -1,0 +1,312 @@
+<context>
+# Overview  
+The Huly Webhook Service is a standalone microservice that retrofits webhook functionality into the existing Huly self-hosted deployment. Since Huly doesn't natively support webhooks, this service monitors the MongoDB database for changes and delivers webhook notifications to configured endpoints. This enables external integrations, automation workflows, and real-time notifications for Huly events.
+
+# Core Features  
+
+## Change Detection System
+- Monitors MongoDB for changes using Change Streams (primary) or polling (fallback)
+- Detects create, update, and delete operations on key Huly entities
+- Transforms database changes into webhook-friendly event payloads
+- Maintains last-processed timestamps for reliability
+
+## Webhook Management
+- RESTful API for webhook configuration (create, read, update, delete)
+- Support for multiple webhooks per event type
+- Event filtering by project, issue type, or custom criteria
+- Webhook enable/disable without deletion
+- Bulk webhook operations
+
+## Event Delivery System
+- HTTP POST delivery to configured endpoints
+- Configurable retry mechanism with exponential backoff
+- Dead letter queue for failed deliveries
+- Batch delivery option for high-volume scenarios
+- Request/response logging for debugging
+
+## Security Features
+- HMAC-SHA256 webhook signatures for payload verification
+- API key authentication for webhook management
+- IP whitelisting for webhook endpoints
+- Rate limiting to prevent abuse
+- Secure secret storage and rotation
+
+# User Experience  
+
+## Administrator Persona
+- Needs to configure webhooks for external integrations
+- Requires visibility into webhook delivery status
+- Wants reliable event delivery with retry capabilities
+- Needs security controls to prevent unauthorized access
+
+## Developer Persona
+- Needs clear webhook payload documentation
+- Requires signature verification examples
+- Wants filtering options to reduce noise
+- Needs debugging tools for failed deliveries
+
+## Key User Flows
+1. Webhook Configuration: Admin creates webhook → selects events → configures endpoint → tests delivery
+2. Event Processing: Huly change occurs → service detects → transforms payload → delivers webhook
+3. Failure Handling: Delivery fails → retry attempts → dead letter queue → admin notification
+</context>
+<PRD>
+# Technical Architecture  
+
+## System Components
+
+### Webhook Service Core
+- Node.js application with Express.js REST API
+- MongoDB Change Streams listener
+- Event processor and transformer
+- HTTP delivery engine with retry logic
+- Background job processor for async operations
+
+### Database Schema
+```javascript
+// webhooks collection
+{
+  _id: ObjectId,
+  name: String,
+  url: String,
+  events: Array<String>, // ["issue.created", "issue.updated", "project.created"]
+  active: Boolean,
+  secret: String, // for HMAC signing
+  filters: {
+    projects: Array<String>, // project IDs to filter
+    issueTypes: Array<String>, // issue types to filter
+    customFilters: Object // extensible filtering
+  },
+  headers: Object, // custom headers for requests
+  retryConfig: {
+    maxAttempts: Number,
+    backoffMultiplier: Number
+  },
+  createdAt: Date,
+  lastDelivery: Date,
+  failureCount: Number
+}
+
+// webhook_deliveries collection
+{
+  _id: ObjectId,
+  webhookId: ObjectId,
+  eventType: String,
+  eventId: String,
+  payload: Object,
+  status: String, // "pending", "success", "failed"
+  attempts: Number,
+  lastAttempt: Date,
+  nextRetry: Date,
+  response: {
+    status: Number,
+    headers: Object,
+    body: String
+  },
+  error: String,
+  createdAt: Date
+}
+
+// webhook_events collection (for deduplication)
+{
+  _id: ObjectId,
+  sourceId: String, // Huly entity ID
+  eventType: String,
+  eventHash: String, // hash of event data
+  processedAt: Date,
+  webhookDeliveries: Array<ObjectId>
+}
+```
+
+### API Endpoints
+- `POST /api/webhooks` - Create webhook
+- `GET /api/webhooks` - List webhooks
+- `GET /api/webhooks/:id` - Get webhook details
+- `PUT /api/webhooks/:id` - Update webhook
+- `DELETE /api/webhooks/:id` - Delete webhook
+- `POST /api/webhooks/:id/test` - Test webhook delivery
+- `GET /api/webhooks/:id/deliveries` - Get delivery history
+- `POST /api/webhooks/:id/replay/:deliveryId` - Replay failed delivery
+- `GET /api/health` - Service health check
+- `GET /api/stats` - Webhook statistics
+
+### Integration Points
+- MongoDB connection (shared with Huly)
+- Docker Compose service definition
+- Nginx reverse proxy configuration
+- Environment variable configuration
+
+# Development Roadmap  
+
+## Phase 1: MVP - Core Webhook Functionality
+- MongoDB Change Streams integration
+- Basic webhook CRUD operations
+- Event detection for issues and projects
+- Simple HTTP delivery with retries
+- HMAC signature generation
+- Docker containerization
+- Basic health check endpoint
+
+## Phase 2: Enhanced Reliability
+- Fallback polling mechanism
+- Dead letter queue implementation
+- Delivery status tracking
+- Webhook delivery history
+- Replay failed deliveries
+- Batch delivery for efficiency
+- Event deduplication
+
+## Phase 3: Advanced Features
+- Event filtering by criteria
+- Custom headers support
+- IP whitelisting
+- Rate limiting
+- Webhook statistics and analytics
+- Performance monitoring
+- Bulk webhook operations
+- Webhook import/export
+
+## Phase 4: UI and Developer Experience
+- Web-based webhook management UI
+- Webhook testing interface
+- Delivery log viewer
+- Webhook payload documentation
+- Code examples for signature verification
+- OpenAPI specification
+- Webhook templates
+
+# Logical Dependency Chain
+
+## Foundation (Must be built first)
+1. Project setup and Docker configuration
+2. MongoDB connection and Change Streams setup
+3. Basic event detection and transformation
+4. Core webhook data model
+
+## Core Functionality (Builds on foundation)
+1. Webhook CRUD API endpoints
+2. Event delivery system with basic retry
+3. HMAC signature implementation
+4. Health check and monitoring
+
+## Reliability Layer (Requires core functionality)
+1. Advanced retry mechanism with exponential backoff
+2. Dead letter queue for failed deliveries
+3. Event deduplication to prevent duplicates
+4. Delivery history and status tracking
+
+## Enhancement Layer (Can be built independently)
+1. Event filtering system
+2. Batch delivery optimization
+3. Statistics and analytics
+4. Performance improvements
+
+# Risks and Mitigations  
+
+## Technical Challenges
+
+### MongoDB Change Streams Availability
+- Risk: Change Streams require MongoDB replica set
+- Mitigation: Implement polling fallback mechanism
+- Detection: Check MongoDB configuration on startup
+
+### High Volume Event Processing
+- Risk: Service overwhelmed by rapid changes
+- Mitigation: Implement queue-based processing and batch delivery
+- Monitoring: Track processing lag and queue depth
+
+### Network Reliability
+- Risk: Webhook endpoints may be unreliable
+- Mitigation: Comprehensive retry mechanism with exponential backoff
+- Fallback: Dead letter queue for persistent failures
+
+## Security Risks
+
+### Webhook URL Validation
+- Risk: Malicious webhook URLs (SSRF attacks)
+- Mitigation: URL validation and IP filtering
+- Implementation: Whitelist allowed protocols and ports
+
+### Secret Management
+- Risk: Webhook secrets exposed
+- Mitigation: Encrypt secrets at rest, use environment variables
+- Audit: Log secret usage without exposing values
+
+## Operational Risks
+
+### Service Discovery
+- Risk: Huly services may change IPs in Docker
+- Mitigation: Use Docker service names for internal communication
+- Configuration: Environment-based service URLs
+
+# Appendix  
+
+## Supported Event Types
+- `issue.created` - New issue created
+- `issue.updated` - Issue modified (any field)
+- `issue.deleted` - Issue removed
+- `issue.status_changed` - Issue status specifically changed
+- `issue.assigned` - Issue assignment changed
+- `project.created` - New project created
+- `project.updated` - Project settings modified
+- `project.archived` - Project archived
+- `comment.created` - Comment added to issue
+- `attachment.added` - File attached to issue
+
+## Webhook Payload Structure
+```json
+{
+  "id": "unique-event-id",
+  "type": "issue.created",
+  "timestamp": "2025-07-17T20:45:00Z",
+  "workspace": "agentspace",
+  "data": {
+    "issue": {
+      "id": "LMP-123",
+      "identifier": "LMP-123",
+      "title": "Issue title",
+      "description": "Issue description",
+      "status": "Backlog",
+      "priority": "medium",
+      "assignee": null,
+      "project": {
+        "id": "project-id",
+        "identifier": "LMP",
+        "name": "Project Name"
+      },
+      "createdBy": "user@example.com",
+      "createdAt": "2025-07-17T20:45:00Z",
+      "updatedAt": "2025-07-17T20:45:00Z"
+    }
+  },
+  "changes": {
+    // For update events, shows what changed
+    "status": {
+      "from": "Backlog",
+      "to": "In Progress"
+    }
+  }
+}
+```
+
+## Signature Verification Example
+```javascript
+const crypto = require('crypto');
+
+function verifyWebhookSignature(payload, signature, secret) {
+  const hmac = crypto.createHmac('sha256', secret);
+  const expectedSignature = 'sha256=' + hmac.update(payload).digest('hex');
+  return crypto.timingSafeEqual(
+    Buffer.from(signature),
+    Buffer.from(expectedSignature)
+  );
+}
+```
+
+## Performance Considerations
+- Use MongoDB Change Streams for real-time detection (milliseconds)
+- Batch multiple events within 1-second window
+- Implement connection pooling for HTTP delivery
+- Cache webhook configurations in memory
+- Use worker threads for CPU-intensive operations
+</PRD>

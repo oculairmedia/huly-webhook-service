@@ -1,0 +1,60 @@
+{
+  "name": "huly-webhook-service",
+  "version": "1.0.0",
+  "description": "Webhook service for Huly self-hosted deployment that monitors MongoDB changes and delivers webhook notifications",
+  "main": "src/index.js",
+  "scripts": {
+    "start": "node src/index.js",
+    "dev": "nodemon src/index.js",
+    "test": "jest",
+    "test:watch": "jest --watch",
+    "lint": "eslint src/",
+    "lint:fix": "eslint src/ --fix",
+    "docker:build": "docker build -t huly-webhook-service .",
+    "docker:run": "docker run -p 3456:3456 huly-webhook-service"
+  },
+  "keywords": [
+    "webhook",
+    "huly",
+    "mongodb",
+    "change-streams",
+    "microservice"
+  ],
+  "author": "Huly Webhook Team",
+  "license": "MIT",
+  "dependencies": {
+    "express": "^4.18.2",
+    "mongodb": "^6.3.0",
+    "cors": "^2.8.5",
+    "helmet": "^7.1.0",
+    "morgan": "^1.10.0",
+    "dotenv": "^16.3.1",
+    "axios": "^1.6.2",
+    "crypto": "^1.0.1",
+    "uuid": "^9.0.1",
+    "joi": "^17.11.0",
+    "winston": "^3.11.0",
+    "node-cron": "^3.0.3"
+  },
+  "devDependencies": {
+    "nodemon": "^3.0.2",
+    "jest": "^29.7.0",
+    "supertest": "^6.3.3",
+    "eslint": "^8.55.0",
+    "eslint-config-standard": "^17.1.0",
+    "eslint-plugin-import": "^2.29.0",
+    "eslint-plugin-node": "^11.1.0",
+    "eslint-plugin-promise": "^6.1.1"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/oculairmedia/huly-webhook-service.git"
+  },
+  "bugs": {
+    "url": "https://github.com/oculairmedia/huly-webhook-service/issues"
+  },
+  "homepage": "https://github.com/oculairmedia/huly-webhook-service#readme"
+}

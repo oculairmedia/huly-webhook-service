@@ -1,0 +1,675 @@
+{
+  "master": {
+    "tasks": [
+      {
+        "id": 1,
+        "title": "Setup Project Infrastructure and Docker Configuration",
+        "description": "Initialize Node.js project structure, configure Docker container, and integrate with existing Huly docker-compose setup",
+        "details": "Create package.json with Express.js, MongoDB driver, and required dependencies. Setup Dockerfile with Node.js 18+ base image. Add service definition to docker-compose.yml with proper networking to access MongoDB and integrate with nginx proxy. Configure environment variables for MongoDB connection, service ports, and secrets. Setup proper volume mounts for logs and configuration.",
+        "testStrategy": "Verify Docker container builds successfully, service starts without errors, can connect to MongoDB, and responds to health checks. Test integration with existing Huly services through docker-compose.",
+        "priority": "high",
+        "dependencies": [],
+        "status": "pending",
+        "subtasks": [
+          {
+            "id": 1,
+            "title": "Configure package.json with dependencies and scripts",
+            "description": "Initialize Node.js project with package.json containing Express.js, MongoDB driver, and required dependencies",
+            "dependencies": [],
+            "details": "Create package.json with Express.js 4.x, mongodb driver 5.x, dotenv for environment variables, cors for cross-origin requests, helmet for security headers, express-rate-limit for API protection, and nodemon for development. Configure npm scripts for start, dev, test, and docker commands. Set Node.js version requirement to 18+ and configure proper entry point.",
+            "status": "pending",
+            "testStrategy": ""
+          },
+          {
+            "id": 2,
+            "title": "Create Dockerfile with Node.js 18+ configuration",
+            "description": "Build Docker container configuration with proper Node.js setup and security best practices",
+            "dependencies": [
+              1
+            ],
+            "details": "Create multi-stage Dockerfile using node:18-alpine base image. Configure non-root user for security, copy package files first for better layer caching, install dependencies with npm ci for production builds. Set proper working directory, expose required port, configure health check endpoint, and optimize for container size. Include proper .dockerignore file.",
+            "status": "pending",
+            "testStrategy": ""
+          },
+          {
+            "id": 3,
+            "title": "Integrate service into docker-compose.yml",
+            "description": "Add webhook service definition to existing Huly docker-compose configuration with proper networking",
+            "dependencies": [
+              2
+            ],
+            "details": "Add huly-webhook service to docker-compose.yml with build context, environment variables, volume mounts for logs, depends_on for MongoDB dependency, and network configuration for internal service communication. Configure port mapping, restart policy, and integration with nginx proxy for external access. Ensure proper service discovery and health checks.",
+            "status": "pending",
+            "testStrategy": ""
+          },
+          {
+            "id": 4,
+            "title": "Configure environment variables and validation",
+            "description": "Setup comprehensive environment configuration with validation and secure defaults",
+            "dependencies": [
+              3
+            ],
+            "details": "Create .env.example template with all required variables: MONGODB_URL, WEBHOOK_PORT, API_SECRET_KEY, LOG_LEVEL, RATE_LIMIT_WINDOW, MAX_RETRIES. Implement environment validation on startup to ensure all required variables are present. Configure secure defaults and validation rules. Add environment variable documentation and setup instructions.",
+            "status": "pending",
+            "testStrategy": ""
+          }
+        ]
+      },
+      {
+        "id": 2,
+        "title": "Implement MongoDB Connection and Change Streams Setup",
+        "description": "Establish MongoDB connection using shared database and implement Change Streams listener for real-time event detection",
+        "details": "Connect to existing Huly MongoDB instance using connection string from environment variables. Implement Change Streams listener to monitor collections: issues, projects, comments, attachments. Add fallback polling mechanism for non-replica set environments. Implement connection pooling and error handling. Create monitoring for connection health and stream status.",
+        "testStrategy": "Test MongoDB connection establishment, Change Streams functionality with mock data changes, fallback polling mechanism, and connection recovery after network interruptions.",
+        "priority": "high",
+        "dependencies": [
+          1
+        ],
+        "status": "pending",
+        "subtasks": [
+          {
+            "id": 1,
+            "title": "Setup MongoDB Connection Configuration",
+            "description": "Establish MongoDB connection using shared database configuration from environment variables",
+            "dependencies": [],
+            "details": "Configure MongoDB connection using MONGODB_URL environment variable. Set up connection options for timeout, pool size, and authentication. Implement connection validation and health checks. Create shared connection instance that can be used across the application.",
+            "status": "pending",
+            "testStrategy": ""
+          },
+          {
+            "id": 2,
+            "title": "Implement Change Streams Listener",
+            "description": "Create Change Streams implementation to monitor real-time database changes",
+            "dependencies": [
+              1
+            ],
+            "details": "Implement MongoDB Change Streams to watch collections: issues, projects, comments, attachments. Configure stream options for resumeAfter and fullDocument. Add event filtering and error handling for stream interruptions. Implement stream restart logic for connection recovery.",
+            "status": "pending",
+            "testStrategy": ""
+          },
+          {
+            "id": 3,
+            "title": "Build Fallback Polling Mechanism",
+            "description": "Create polling-based fallback for environments without replica set support",
+            "dependencies": [
+              1
+            ],
+            "details": "Implement polling mechanism that queries collections for recent changes using timestamps. Create configurable polling intervals and batch sizes. Add logic to detect when Change Streams are unavailable and automatically switch to polling mode. Ensure data consistency between polling and streaming modes.",
+            "status": "pending",
+            "testStrategy": ""
+          },
+          {
+            "id": 4,
+            "title": "Implement Connection Pooling and Error Handling",
+            "description": "Build robust connection management with pooling and comprehensive error handling",
+            "dependencies": [
+              1
+            ],
+            "details": "Configure MongoDB connection pooling with appropriate pool size limits. Implement reconnection logic for network failures and connection drops. Add error handling for various MongoDB error types. Create connection monitoring and automatic failover mechanisms.",
+            "status": "pending",
+            "testStrategy": ""
+          },
+          {
+            "id": 5,
+            "title": "Setup Connection Health Monitoring",
+            "description": "Create monitoring system for connection health and Change Streams status",
+            "dependencies": [
+              2,
+              3,
+              4
+            ],
+            "details": "Implement health check endpoints for MongoDB connection status. Create monitoring for Change Streams state and lag detection. Add alerting for connection failures and stream interruptions. Implement metrics collection for connection performance and stream throughput.",
+            "status": "pending",
+            "testStrategy": ""
+          }
+        ]
+      },
+      {
+        "id": 3,
+        "title": "Create Database Schema and Collections",
+        "description": "Design and implement MongoDB collections for webhooks, deliveries, and events with proper indexing",
+        "details": "Create webhooks collection with schema for URL, events, filters, retry config, and security settings. Implement webhook_deliveries collection for tracking delivery attempts and responses. Create webhook_events collection for deduplication. Add compound indexes for efficient querying: webhookId+status, eventType+createdAt, sourceId+eventHash. Implement schema validation and migration scripts.",
+        "testStrategy": "Verify collections are created with correct schemas, indexes perform efficiently on large datasets, schema validation works correctly, and migration scripts handle version upgrades properly.",
+        "priority": "high",
+        "dependencies": [
+          2
+        ],
+        "status": "pending",
+        "subtasks": [
+          {
+            "id": 1,
+            "title": "Design and implement MongoDB collection schemas for webhooks, deliveries, and events",
+            "description": "Create three main MongoDB collections with proper field definitions: webhooks collection for storing webhook configurations (URL, events, filters, retry config, security settings), webhook_deliveries collection for tracking delivery attempts and responses, and webhook_events collection for event deduplication and history",
+            "dependencies": [],
+            "details": "Define webhooks collection schema with fields: id, url, events[], filters{}, retryConfig{maxAttempts, backoffStrategy}, secret, active, createdAt, updatedAt. Define webhook_deliveries collection with fields: id, webhookId, eventId, url, payload, httpStatus, responseHeaders, responseBody, attemptNumber, deliveredAt, error. Define webhook_events collection with fields: id, sourceId, eventType, eventHash, processedAt, webhookIds[].",
+            "status": "pending",
+            "testStrategy": ""
+          },
+          {
+            "id": 2,
+            "title": "Create compound indexes for efficient querying and performance optimization",
+            "description": "Design and implement compound indexes to optimize database queries for webhook operations, including webhookId+status combinations, eventType+createdAt for chronological filtering, and sourceId+eventHash for deduplication",
+            "dependencies": [
+              1
+            ],
+            "details": "Create compound indexes: webhooks collection - {active: 1, events: 1}, webhook_deliveries collection - {webhookId: 1, status: 1}, {deliveredAt: 1}, {attemptNumber: 1, webhookId: 1}, webhook_events collection - {sourceId: 1, eventHash: 1}, {eventType: 1, processedAt: 1}, {processedAt: 1} for TTL. Analyze query patterns and optimize index order for maximum efficiency.",
+            "status": "pending",
+            "testStrategy": ""
+          },
+          {
+            "id": 3,
+            "title": "Implement schema validation rules for data integrity and consistency",
+            "description": "Create MongoDB schema validation rules using JSON Schema to enforce data types, required fields, and business logic constraints across all webhook-related collections",
+            "dependencies": [
+              1
+            ],
+            "details": "Implement validation rules for webhooks collection: URL format validation, events array must contain valid event types, retry config must have positive integers, secret must be string. For webhook_deliveries: webhookId must exist, httpStatus must be valid HTTP code, attemptNumber must be positive. For webhook_events: eventHash must be unique per sourceId, eventType must be from allowed list.",
+            "status": "pending",
+            "testStrategy": ""
+          },
+          {
+            "id": 4,
+            "title": "Build migration scripts for database schema versioning and upgrades",
+            "description": "Create migration scripts to handle database schema changes, version upgrades, and data transformations while maintaining backward compatibility and zero-downtime deployments",
+            "dependencies": [
+              2,
+              3
+            ],
+            "details": "Create migration framework with version tracking collection, implement up/down migration functions, handle index creation/modification safely, data type changes with fallback values, and collection renaming. Include rollback capabilities and migration validation. Create initial migration to establish all collections, indexes, and validation rules from scratch.",
+            "status": "pending",
+            "testStrategy": ""
+          }
+        ]
+      },
+      {
+        "id": 4,
+        "title": "Implement Core Event Detection and Transformation",
+        "description": "Build event processor to detect Huly changes and transform them into webhook-friendly payloads",
+        "details": "Create event processor that listens to Change Streams and identifies supported event types: issue.created, issue.updated, issue.deleted, project.created, etc. Implement payload transformation to convert Huly database documents into standardized webhook payload format. Add event deduplication using hash-based detection. Implement change detection logic to identify specific field changes for update events.",
+        "testStrategy": "Test event detection for all supported types, payload transformation accuracy, deduplication prevents duplicate events, and change detection correctly identifies modified fields.",
+        "priority": "high",
+        "dependencies": [
+          3
+        ],
+        "status": "pending",
+        "subtasks": [
+          {
+            "id": 1,
+            "title": "Implement Event Type Detection Engine",
+            "description": "Build event type classification system to identify and categorize different Huly change events from MongoDB Change Streams",
+            "dependencies": [],
+            "details": "Create event type detector that analyzes MongoDB Change Stream operations and maps them to webhook event types (issue.created, issue.updated, issue.deleted, project.created, etc.). Implement operation type mapping logic for insert/update/delete operations. Add entity type identification based on collection names and document structure. Create event filtering to only process supported entity types.",
+            "status": "pending",
+            "testStrategy": ""
+          },
+          {
+            "id": 2,
+            "title": "Build Payload Transformation Logic",
+            "description": "Implement transformation engine to convert raw Huly database documents into standardized webhook payload format",
+            "dependencies": [
+              1
+            ],
+            "details": "Create payload transformer that converts MongoDB documents to webhook-friendly JSON format. Implement field mapping and data sanitization for each entity type. Add nested object flattening and relationship resolution. Create standardized payload structure with consistent field naming across all event types. Implement data type conversion and validation.",
+            "status": "pending",
+            "testStrategy": ""
+          },
+          {
+            "id": 3,
+            "title": "Implement Event Deduplication System",
+            "description": "Build hash-based deduplication mechanism to prevent duplicate webhook events from being processed",
+            "dependencies": [
+              2
+            ],
+            "details": "Create event hash generator using payload content and metadata. Implement deduplication storage using in-memory cache or Redis. Add configurable deduplication window and cleanup mechanism. Create hash collision detection and resolution. Implement performance optimization for high-volume event processing.",
+            "status": "pending",
+            "testStrategy": ""
+          },
+          {
+            "id": 4,
+            "title": "Build Change Detection Algorithms",
+            "description": "Implement sophisticated change detection to identify specific field modifications for update events",
+            "dependencies": [
+              2
+            ],
+            "details": "Create field-level change detection by comparing before/after document states. Implement deep object comparison for nested properties. Add change summary generation with old/new value tracking. Create change filtering to exclude insignificant modifications (timestamps, metadata). Implement performance optimization for large document comparisons.",
+            "status": "pending",
+            "testStrategy": ""
+          },
+          {
+            "id": 5,
+            "title": "Implement Event Routing System",
+            "description": "Build routing engine to determine which webhooks should receive specific events based on filters and subscriptions",
+            "dependencies": [
+              1,
+              3
+            ],
+            "details": "Create event routing logic that matches events to configured webhook endpoints. Implement filter evaluation for event type, entity properties, and custom conditions. Add subscription management for selective event delivery. Create routing performance optimization and caching. Implement error handling for routing failures.",
+            "status": "pending",
+            "testStrategy": ""
+          },
+          {
+            "id": 6,
+            "title": "Implement Payload Standardization Framework",
+            "description": "Build comprehensive payload standardization system ensuring consistent format across all webhook events",
+            "dependencies": [
+              2,
+              4
+            ],
+            "details": "Create standardized payload schema with consistent structure for all event types. Implement versioning support for payload format evolution. Add metadata enrichment with timestamps, event IDs, and source information. Create payload validation and schema enforcement. Implement backward compatibility handling for payload format changes.",
+            "status": "pending",
+            "testStrategy": ""
+          }
+        ]
+      },
+      {
+        "id": 5,
+        "title": "Build Webhook Management REST API",
+        "description": "Create Express.js REST API endpoints for webhook CRUD operations with validation and authentication",
+        "details": "Implement Express.js routes: POST /api/webhooks (create), GET /api/webhooks (list), GET /api/webhooks/:id (details), PUT /api/webhooks/:id (update), DELETE /api/webhooks/:id (delete). Add request validation using middleware for URL format, event types, and filter criteria. Implement API key authentication middleware. Add webhook testing endpoint POST /api/webhooks/:id/test for immediate delivery testing.",
+        "testStrategy": "Test all CRUD operations with valid and invalid data, API key authentication works correctly, URL validation prevents SSRF attacks, and webhook testing endpoint delivers test payloads successfully.",
+        "priority": "high",
+        "dependencies": [
+          3
+        ],
+        "status": "pending",
+        "subtasks": [
+          {
+            "id": 1,
+            "title": "Setup Express.js routing structure and middleware pipeline",
+            "description": "Initialize Express.js application with organized route structure, error handling middleware, and CORS configuration",
+            "dependencies": [],
+            "details": "Create Express.js app with route separation using express.Router(). Setup middleware pipeline including body parsing, CORS, request logging, and global error handling. Organize routes into logical groups: /api/webhooks for CRUD operations and /api/webhooks/test for testing endpoints. Configure proper HTTP status codes and JSON response formatting.",
+            "status": "pending",
+            "testStrategy": ""
+          },
+          {
+            "id": 2,
+            "title": "Implement request validation middleware",
+            "description": "Create validation middleware for webhook data including URL format, event types, and filter criteria validation",
+            "dependencies": [
+              1
+            ],
+            "details": "Implement validation middleware using express-validator or joi for webhook creation/update requests. Validate webhook URL format and prevent SSRF attacks by checking against blacklisted IPs/domains. Validate event type arrays against allowed values. Create filter criteria validation for project IDs, issue types, and custom filter expressions. Add request sanitization to prevent injection attacks.",
+            "status": "pending",
+            "testStrategy": ""
+          },
+          {
+            "id": 3,
+            "title": "Build API key authentication middleware",
+            "description": "Implement secure API key authentication system with rate limiting and access control",
+            "dependencies": [
+              1
+            ],
+            "details": "Create authentication middleware that validates API keys from Authorization header or query parameters. Implement secure API key generation and storage with bcrypt hashing. Add rate limiting per API key to prevent abuse. Create middleware for different access levels (read-only vs full access). Implement API key rotation and expiration functionality.",
+            "status": "pending",
+            "testStrategy": ""
+          },
+          {
+            "id": 4,
+            "title": "Implement CRUD operations for webhook management",
+            "description": "Create REST endpoints for webhook creation, retrieval, updating, and deletion with proper database integration",
+            "dependencies": [
+              2,
+              3
+            ],
+            "details": "Implement POST /api/webhooks for webhook creation with validation and database storage. Create GET /api/webhooks for listing webhooks with pagination and filtering. Build GET /api/webhooks/:id for individual webhook retrieval. Implement PUT /api/webhooks/:id for webhook updates with partial update support. Create DELETE /api/webhooks/:id with proper cascade deletion of related delivery records.",
+            "status": "pending",
+            "testStrategy": ""
+          },
+          {
+            "id": 5,
+            "title": "Create webhook testing endpoints and delivery simulation",
+            "description": "Build testing endpoints for immediate webhook delivery testing and payload validation",
+            "dependencies": [
+              4
+            ],
+            "details": "Implement POST /api/webhooks/:id/test endpoint for manual webhook testing with custom payloads. Create test payload generation for different event types. Add delivery simulation that validates webhook URL accessibility and response handling. Implement test result logging and response analysis. Create endpoint for testing webhook filters with sample events.",
+            "status": "pending",
+            "testStrategy": ""
+          }
+        ]
+      },
+      {
+        "id": 6,
+        "title": "Implement HTTP Delivery Engine with HMAC Signatures",
+        "description": "Build reliable HTTP delivery system with HMAC-SHA256 signature generation and basic retry mechanism",
+        "details": "Create HTTP delivery engine using fetch or axios with configurable timeouts. Implement HMAC-SHA256 signature generation using webhook secret. Add custom headers support and proper error handling. Implement basic retry mechanism with configurable max attempts. Create delivery tracking in webhook_deliveries collection. Add request/response logging for debugging purposes.",
+        "testStrategy": "Test HTTP delivery to various endpoints, HMAC signature verification using provided examples, retry mechanism triggers on failures, delivery tracking records accurate status, and custom headers are included correctly.",
+        "priority": "high",
+        "dependencies": [
+          4,
+          5
+        ],
+        "status": "pending",
+        "subtasks": [
+          {
+            "id": 1,
+            "title": "Implement HTTP Client Infrastructure",
+            "description": "Create configurable HTTP client with timeout handling and connection management",
+            "dependencies": [],
+            "details": "Set up HTTP client using fetch or axios with configurable timeout settings, connection pooling, and proper error handling. Implement request/response interceptors for logging and debugging. Add support for custom headers and request body formatting.",
+            "status": "pending",
+            "testStrategy": ""
+          },
+          {
+            "id": 2,
+            "title": "Implement HMAC-SHA256 Signature Generation",
+            "description": "Build cryptographic signature system for webhook authentication",
+            "dependencies": [],
+            "details": "Implement HMAC-SHA256 signature generation using webhook secret from configuration. Create signature header formatting (X-Hub-Signature-256). Add timestamp-based signatures for replay attack prevention. Include signature verification utilities for testing.",
+            "status": "pending",
+            "testStrategy": ""
+          },
+          {
+            "id": 3,
+            "title": "Build Delivery Tracking System",
+            "description": "Create database tracking for webhook delivery attempts and outcomes",
+            "dependencies": [],
+            "details": "Design webhook_deliveries collection schema with delivery ID, webhook ID, timestamp, status, and response data. Implement delivery record creation and updates. Add indexes for efficient querying by webhook ID and timestamp. Create cleanup policies for old delivery records.",
+            "status": "pending",
+            "testStrategy": ""
+          },
+          {
+            "id": 4,
+            "title": "Implement Basic Retry Mechanism",
+            "description": "Build configurable retry system with attempt limits and delay handling",
+            "dependencies": [
+              1,
+              3
+            ],
+            "details": "Create retry logic with configurable maximum attempts and initial delay. Implement retry scheduling using setTimeout or job queue system. Add failure tracking and status updates in delivery records. Include retry backoff strategy configuration.",
+            "status": "pending",
+            "testStrategy": ""
+          },
+          {
+            "id": 5,
+            "title": "Integrate Logging and Error Handling System",
+            "description": "Build comprehensive logging for debugging and monitoring webhook deliveries",
+            "dependencies": [
+              1,
+              2,
+              3
+            ],
+            "details": "Implement detailed request/response logging with configurable log levels. Add error categorization for network errors, timeout errors, and HTTP status codes. Create structured logging format for easy parsing. Include performance metrics logging for delivery timing.",
+            "status": "pending",
+            "testStrategy": ""
+          }
+        ]
+      },
+      {
+        "id": 7,
+        "title": "Implement Advanced Retry and Dead Letter Queue",
+        "description": "Build sophisticated retry mechanism with exponential backoff and dead letter queue for failed deliveries",
+        "details": "Enhance retry mechanism with exponential backoff using configurable multipliers. Implement dead letter queue for deliveries that exceed max retry attempts. Add background job processor for scheduled retries using setTimeout or job queue. Create replay functionality for failed deliveries via POST /api/webhooks/:id/replay/:deliveryId. Implement delivery status tracking and failure notifications.",
+        "testStrategy": "Test exponential backoff timing, dead letter queue captures failed deliveries, background job processor handles scheduled retries, replay functionality works for failed deliveries, and status tracking is accurate.",
+        "priority": "medium",
+        "dependencies": [
+          6
+        ],
+        "status": "pending",
+        "subtasks": [
+          {
+            "id": 1,
+            "title": "Implement Exponential Backoff Algorithm",
+            "description": "Build configurable exponential backoff algorithm with jitter for retry timing calculations",
+            "dependencies": [],
+            "details": "Create exponential backoff calculator with configurable base delay, multiplier, max delay, and jitter. Implement formula: delay = min(base_delay * (multiplier ^ attempt) + jitter, max_delay). Add jitter randomization to prevent thundering herd. Support configurable parameters per webhook endpoint. Include backoff state tracking for delivery attempts.",
+            "status": "pending",
+            "testStrategy": ""
+          },
+          {
+            "id": 2,
+            "title": "Implement Dead Letter Queue System",
+            "description": "Build dead letter queue collection and management for deliveries that exceed maximum retry attempts",
+            "dependencies": [],
+            "details": "Create webhook_dead_letters MongoDB collection with schema for failed deliveries. Implement automatic transfer of deliveries exceeding max retry attempts. Add dead letter metadata including failure reasons, retry history, and original payload. Create dead letter query API for monitoring failed deliveries. Implement dead letter cleanup policies with configurable retention periods.",
+            "status": "pending",
+            "testStrategy": ""
+          },
+          {
+            "id": 3,
+            "title": "Implement Background Job Processing System",
+            "description": "Build background job processor for scheduled retry deliveries using job queue patterns",
+            "dependencies": [
+              1
+            ],
+            "details": "Create job queue system using MongoDB collections or in-memory queue for scheduled retries. Implement job processor that polls for due retry jobs and executes deliveries. Add job scheduling using calculated backoff delays. Create job state management (pending, processing, completed, failed). Implement graceful shutdown handling and job recovery on restart. Add job concurrency controls and rate limiting.",
+            "status": "pending",
+            "testStrategy": ""
+          },
+          {
+            "id": 4,
+            "title": "Implement Delivery Replay Functionality",
+            "description": "Build replay system for manual re-delivery of failed webhook deliveries",
+            "dependencies": [
+              2
+            ],
+            "details": "Create POST /api/webhooks/:id/replay/:deliveryId endpoint for manual replay. Implement replay validation to check delivery eligibility (failed status, within replay window). Add replay with fresh retry counter reset or preserve original attempt count option. Create replay audit trail tracking who initiated replay and when. Implement bulk replay functionality for multiple failed deliveries. Add replay rate limiting to prevent abuse.",
+            "status": "pending",
+            "testStrategy": ""
+          },
+          {
+            "id": 5,
+            "title": "Implement Delivery Status Tracking System",
+            "description": "Build comprehensive delivery status tracking with detailed state management and history",
+            "dependencies": [
+              3
+            ],
+            "details": "Create detailed delivery status enum (pending, sending, delivered, failed, retrying, dead_letter, replayed). Implement status transition tracking with timestamps and reason codes. Add delivery attempt logging with HTTP status codes, response times, and error messages. Create delivery state machine with valid transition rules. Implement status update notifications for webhook owners. Add status-based filtering and querying capabilities.",
+            "status": "pending",
+            "testStrategy": ""
+          },
+          {
+            "id": 6,
+            "title": "Implement Failure Notification System",
+            "description": "Build notification system for webhook delivery failures and dead letter events",
+            "dependencies": [
+              4,
+              5
+            ],
+            "details": "Create configurable notification system for delivery failures (email, webhook, in-app). Implement failure threshold notifications when failure rate exceeds configured limits. Add dead letter notifications when deliveries are moved to dead letter queue. Create notification templates with delivery context and failure details. Implement notification rate limiting to prevent spam. Add notification preferences per webhook endpoint with customizable triggers and channels.",
+            "status": "pending",
+            "testStrategy": ""
+          }
+        ]
+      },
+      {
+        "id": 8,
+        "title": "Add Event Filtering and Webhook Configuration",
+        "description": "Implement flexible event filtering by projects, issue types, and custom criteria with webhook configuration options",
+        "details": "Create filtering engine that evaluates webhook filters against events before delivery. Implement project-based filtering using project IDs. Add issue type filtering for granular event selection. Create extensible custom filter system for complex criteria. Add webhook enable/disable functionality. Implement bulk operations for webhook management.",
+        "testStrategy": "Test project filtering excludes unwanted events, issue type filtering works correctly, custom filters handle complex criteria, enable/disable toggles work properly, and bulk operations process multiple webhooks efficiently.",
+        "priority": "medium",
+        "dependencies": [
+          6
+        ],
+        "status": "pending",
+        "subtasks": [
+          {
+            "id": 1,
+            "title": "Design Core Filtering Engine Architecture",
+            "description": "Create the foundational filtering engine that evaluates events against webhook filter criteria before delivery",
+            "dependencies": [],
+            "details": "Design and implement a flexible filtering engine with abstract filter interface, filter evaluation pipeline, and support for multiple filter types (project, issue type, custom). Create FilterEngine class with evaluate() method that takes event payload and filter configuration. Implement filter chaining with AND/OR logic operators. Add performance optimization with filter short-circuiting and caching mechanisms.",
+            "status": "pending",
+            "testStrategy": ""
+          },
+          {
+            "id": 2,
+            "title": "Implement Project-Based Event Filtering",
+            "description": "Build project filtering system that allows webhooks to receive events only from specified projects",
+            "dependencies": [
+              1
+            ],
+            "details": "Create ProjectFilter class that matches event project IDs against webhook project filter configuration. Implement support for multiple project selection (whitelist/blacklist patterns). Add project hierarchy filtering for parent/child project relationships. Handle edge cases like project deletion and project ID changes. Integrate with filtering engine pipeline.",
+            "status": "pending",
+            "testStrategy": ""
+          },
+          {
+            "id": 3,
+            "title": "Build Extensible Custom Filter System",
+            "description": "Create flexible custom filter system for complex event filtering criteria beyond project and issue type",
+            "dependencies": [
+              1
+            ],
+            "details": "Design CustomFilter interface supporting JSON-based filter definitions with operators (equals, contains, regex, greater than, etc.). Implement field path resolution for nested object filtering (e.g., 'issue.assignee.email'). Add support for logical operators (AND, OR, NOT) and filter grouping. Create filter validation system to prevent security issues and ensure filter correctness. Build extensible architecture for adding new filter types.",
+            "status": "pending",
+            "testStrategy": ""
+          },
+          {
+            "id": 4,
+            "title": "Implement Webhook Configuration Management",
+            "description": "Build webhook configuration system for managing filter settings, enable/disable states, and bulk operations",
+            "dependencies": [
+              2,
+              3
+            ],
+            "details": "Create webhook configuration interface for managing filter settings through REST API. Implement enable/disable functionality with immediate effect on event processing. Add bulk operations for multiple webhook management (enable/disable multiple webhooks, apply filter templates). Create configuration validation and migration system for filter schema changes. Implement configuration caching and real-time updates.",
+            "status": "pending",
+            "testStrategy": ""
+          }
+        ]
+      },
+      {
+        "id": 9,
+        "title": "Implement Delivery History and Statistics API",
+        "description": "Build comprehensive delivery tracking with history API and webhook statistics for monitoring and debugging",
+        "details": "Create GET /api/webhooks/:id/deliveries endpoint with pagination and filtering. Implement GET /api/stats endpoint for webhook statistics including delivery counts, success rates, and failure analysis. Add delivery history with detailed logs including request/response data. Create performance metrics tracking for delivery times and throughput. Implement data retention policies for old delivery records.",
+        "testStrategy": "Test delivery history API returns accurate paginated results, statistics endpoint provides correct metrics, performance tracking captures timing data, and data retention properly cleans old records.",
+        "priority": "medium",
+        "dependencies": [
+          7
+        ],
+        "status": "pending",
+        "subtasks": [
+          {
+            "id": 1,
+            "title": "Implement Delivery History API with Pagination",
+            "description": "Create GET /api/webhooks/:id/deliveries endpoint with pagination, filtering, and comprehensive delivery record retrieval",
+            "dependencies": [],
+            "details": "Build paginated API endpoint that returns delivery history for specific webhooks. Implement query parameters for filtering by status, date range, and event type. Add proper pagination with cursor-based or offset-based navigation. Include delivery metadata such as timestamps, HTTP status codes, retry attempts, and response times in the response.",
+            "status": "pending",
+            "testStrategy": ""
+          },
+          {
+            "id": 2,
+            "title": "Build Statistics Calculation Engine",
+            "description": "Implement GET /api/stats endpoint for webhook statistics including delivery counts, success rates, and failure analysis",
+            "dependencies": [
+              1
+            ],
+            "details": "Create statistics aggregation system that calculates webhook performance metrics. Implement success/failure rate calculations, delivery count summaries, and error categorization. Add time-based statistics for hourly, daily, and monthly views. Include average response times, throughput metrics, and most common failure reasons.",
+            "status": "pending",
+            "testStrategy": ""
+          },
+          {
+            "id": 3,
+            "title": "Implement Performance Metrics Tracking",
+            "description": "Build comprehensive performance monitoring system for delivery times, throughput, and system health metrics",
+            "dependencies": [
+              2
+            ],
+            "details": "Create performance tracking middleware that captures delivery timing data, endpoint response times, and system throughput metrics. Implement real-time performance monitoring with configurable thresholds and alerts. Add metrics for queue processing times, memory usage, and concurrent delivery tracking.",
+            "status": "pending",
+            "testStrategy": ""
+          },
+          {
+            "id": 4,
+            "title": "Implement Data Retention Policies",
+            "description": "Build automated data retention system for managing old delivery records and maintaining database performance",
+            "dependencies": [
+              3
+            ],
+            "details": "Create configurable data retention policies with automatic cleanup of old delivery records. Implement background job scheduler for periodic data archival and deletion. Add configurable retention periods based on delivery status, webhook importance, and storage requirements. Include data compression and archival options for long-term storage.",
+            "status": "pending",
+            "testStrategy": ""
+          }
+        ]
+      },
+      {
+        "id": 10,
+        "title": "Add Security Features and Health Monitoring",
+        "description": "Implement comprehensive security measures and monitoring capabilities including rate limiting and health checks",
+        "details": "Implement rate limiting middleware for API endpoints to prevent abuse. Add IP whitelisting for webhook endpoint validation. Create secure secret storage with encryption at rest. Implement GET /api/health endpoint with comprehensive system status. Add logging and monitoring for security events. Create webhook URL validation to prevent SSRF attacks. Implement audit logging for webhook operations.",
+        "testStrategy": "Test rate limiting blocks excessive requests, IP whitelisting prevents unauthorized endpoints, secret encryption works correctly, health endpoint reports accurate status, security logging captures events, and URL validation prevents malicious requests.",
+        "priority": "medium",
+        "dependencies": [
+          8,
+          9
+        ],
+        "status": "pending",
+        "subtasks": [
+          {
+            "id": 1,
+            "title": "Implement Rate Limiting Middleware",
+            "description": "Create configurable rate limiting middleware with sliding window algorithm to prevent API abuse",
+            "dependencies": [],
+            "details": "Implement Express.js middleware using sliding window rate limiting algorithm. Support configurable limits per IP address and API key. Include burst allowance and rate limit headers in responses. Add Redis-based storage for distributed rate limiting. Implement different limits for different endpoint types (webhook CRUD vs delivery endpoints).",
+            "status": "pending",
+            "testStrategy": ""
+          },
+          {
+            "id": 2,
+            "title": "Implement IP Whitelisting Security",
+            "description": "Create IP address validation and whitelisting system for webhook endpoint access control",
+            "dependencies": [
+              1
+            ],
+            "details": "Build middleware to validate incoming requests against IP whitelist stored in database. Support CIDR notation for IP ranges. Implement dynamic whitelist updates via admin API. Add geolocation blocking capabilities. Include logging of blocked IP attempts and whitelist bypass attempts.",
+            "status": "pending",
+            "testStrategy": ""
+          },
+          {
+            "id": 3,
+            "title": "Implement Secret Encryption System",
+            "description": "Build secure encryption system for API keys, webhook secrets, and sensitive configuration data",
+            "dependencies": [
+              2
+            ],
+            "details": "Implement AES-256 encryption for secrets at rest using environment-based master key. Create key rotation mechanism for encrypted secrets. Add secure secret generation utilities. Implement envelope encryption for database-stored secrets. Include secure secret comparison for webhook signature validation.",
+            "status": "pending",
+            "testStrategy": ""
+          },
+          {
+            "id": 4,
+            "title": "Create Health Check Endpoints",
+            "description": "Implement comprehensive health monitoring endpoints with system status reporting",
+            "dependencies": [
+              3
+            ],
+            "details": "Create GET /api/health endpoint with MongoDB connection status, Change Streams health, memory usage, and uptime metrics. Implement GET /api/health/detailed for comprehensive system diagnostics. Add dependency health checks for external services. Include performance metrics and resource utilization reporting.",
+            "status": "pending",
+            "testStrategy": ""
+          },
+          {
+            "id": 5,
+            "title": "Implement Security Event Logging",
+            "description": "Build comprehensive security logging system for monitoring and alerting on security events",
+            "dependencies": [
+              4
+            ],
+            "details": "Create structured logging for authentication failures, rate limit violations, IP blocking events, and suspicious activity. Implement log rotation and retention policies. Add integration with external log aggregation systems. Include alerting mechanisms for critical security events and anomaly detection patterns.",
+            "status": "pending",
+            "testStrategy": ""
+          },
+          {
+            "id": 6,
+            "title": "Build Audit Trail System",
+            "description": "Implement comprehensive audit logging for all webhook operations and administrative actions",
+            "dependencies": [
+              5
+            ],
+            "details": "Create audit log database schema for tracking webhook creation, updates, deletions, and delivery attempts. Implement immutable audit records with digital signatures. Add audit log API endpoints for compliance reporting. Include user activity tracking and administrative action logging with timestamps and IP addresses.",
+            "status": "pending",
+            "testStrategy": ""
+          }
+        ]
+      }
+    ],
+    "metadata": {
+      "created": "2025-07-17T21:07:13.914Z",
+      "updated": "2025-07-17T21:07:13.914Z",
+      "description": "Tasks for master context"
+    }
+  }
+}

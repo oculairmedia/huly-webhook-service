@@ -1,0 +1,62 @@
+version: '3.8'
+
+services:
+  huly-webhook:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: huly-webhook-service
+    restart: unless-stopped
+    ports:
+      - "3456:3456"
+    environment:
+      - NODE_ENV=production
+      - PORT=3456
+      - MONGODB_URL=mongodb://mongodb:27017/huly
+      - WEBHOOK_SECRET_KEY=${WEBHOOK_SECRET_KEY:-your-secret-key-here}
+      - API_KEY=${WEBHOOK_API_KEY:-your-api-key-here}
+      - LOG_LEVEL=${LOG_LEVEL:-info}
+      - RETRY_MAX_ATTEMPTS=${RETRY_MAX_ATTEMPTS:-3}
+      - RETRY_BACKOFF_MULTIPLIER=${RETRY_BACKOFF_MULTIPLIER:-2}
+    volumes:
+      - webhook_logs:/app/logs
+    networks:
+      - huly-network
+    depends_on:
+      - mongodb
+    healthcheck:
+      test: ["CMD", "node", "-e", "require('http').get('http://localhost:3456/api/health', (res) => { process.exit(res.statusCode === 200 ? 0 : 1) })"]
+      interval: 30s
+      timeout: 3s
+      retries: 3
+      start_period: 10s
+
+  # MongoDB service (shared with main Huly deployment)
+  mongodb:
+    image: mongo:7.0
+    container_name: huly-mongodb
+    restart: unless-stopped
+    ports:
+      - "27017:27017"
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: ${MONGO_USERNAME:-admin}
+      MONGO_INITDB_ROOT_PASSWORD: ${MONGO_PASSWORD:-password}
+    volumes:
+      - mongodb_data:/data/db
+      - mongodb_config:/data/configdb
+    networks:
+      - huly-network
+    command: ["mongod", "--replSet", "rs0", "--bind_ip_all"]
+
+volumes:
+  webhook_logs:
+    driver: local
+  mongodb_data:
+    driver: local
+  mongodb_config:
+    driver: local
+
+networks:
+  huly-network:
+    external: true
+    name: huly-selfhost_default
