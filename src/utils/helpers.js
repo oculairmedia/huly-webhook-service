@@ -85,7 +85,7 @@ class Helpers {
     if (typeof obj === 'object') {
       const cloned = {};
       for (const key in obj) {
-        if (obj.hasOwnProperty(key)) {
+        if (Object.prototype.hasOwnProperty.call(obj, key)) {
           cloned[key] = this.deepClone(obj[key]);
         }
       }
@@ -328,7 +328,7 @@ class Helpers {
       if (!inThrottle) {
         func.apply(this, args);
         inThrottle = true;
-        setTimeout(() => inThrottle = false, limit);
+        setTimeout(() => { inThrottle = false; }, limit);
       }
     };
   }
@@ -351,7 +351,7 @@ class Helpers {
    * @returns {Promise} Promise that rejects after timeout
    */
   static timeoutReject (ms, message = 'Operation timed out') {
-    return new Promise((_, reject) => {
+    return new Promise((_resolve, reject) => {
       setTimeout(() => reject(new Error(message)), ms);
     });
   }

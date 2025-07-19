@@ -81,22 +81,22 @@ class EventFilterService {
     });
 
     // Existence operators
-    this.operators.set('exists', (a, b) => {
+    this.operators.set('exists', (a, _b) => {
       return a !== undefined && a !== null;
     });
 
-    this.operators.set('notExists', (a, b) => {
+    this.operators.set('notExists', (a, _b) => {
       return a === undefined || a === null;
     });
 
     // Type operators
-    this.operators.set('isString', (a, b) => typeof a === 'string');
-    this.operators.set('isNumber', (a, b) => typeof a === 'number');
-    this.operators.set('isBoolean', (a, b) => typeof a === 'boolean');
-    this.operators.set('isArray', (a, b) => Array.isArray(a));
-    this.operators.set('isObject', (a, b) => typeof a === 'object' && a !== null && !Array.isArray(a));
-    this.operators.set('isNull', (a, b) => a === null);
-    this.operators.set('isUndefined', (a, b) => a === undefined);
+    this.operators.set('isString', (a, _b) => typeof a === 'string');
+    this.operators.set('isNumber', (a, _b) => typeof a === 'number');
+    this.operators.set('isBoolean', (a, _b) => typeof a === 'boolean');
+    this.operators.set('isArray', (a, _b) => Array.isArray(a));
+    this.operators.set('isObject', (a, _b) => typeof a === 'object' && a !== null && !Array.isArray(a));
+    this.operators.set('isNull', (a, _b) => a === null);
+    this.operators.set('isUndefined', (a, _b) => a === undefined);
 
     // Date operators
     this.operators.set('before', (a, b) => {
@@ -558,7 +558,7 @@ class EventFilterService {
       case 'identifier':
         return (data) => self.getValueByPath(data, node.name);
 
-      case 'binary':
+      case 'binary': {
         const leftFn = compile(node.left);
         const rightFn = compile(node.right);
         const operator = self.operators.get(node.operator);
@@ -572,16 +572,18 @@ class EventFilterService {
         } else {
           throw new Error(`Unknown operator: ${node.operator}`);
         }
+      }
 
-      case 'unary':
+      case 'unary': {
         const operandFn = compile(node.operand);
         if (node.operator === '!') {
           return (data) => !operandFn(data);
         } else {
           throw new Error(`Unknown unary operator: ${node.operator}`);
         }
+      }
 
-      case 'function':
+      case 'function': {
         const func = self.functions.get(node.name);
         if (!func) {
           throw new Error(`Unknown function: ${node.name}`);
@@ -589,10 +591,12 @@ class EventFilterService {
 
         const argFns = node.args.map(arg => compile(arg));
         return (data) => func(...argFns.map(fn => fn(data)));
+      }
 
-      case 'array':
+      case 'array': {
         const elementFns = node.elements.map(element => compile(element));
         return (data) => elementFns.map(fn => fn(data));
+      }
 
       default:
         throw new Error(`Unknown node type: ${node.type}`);

@@ -4,50 +4,10 @@
  */
 
 const express = require('express');
-const Joi = require('joi');
-const logger = require('../utils/logger');
-const { asyncHandler, handleValidationError } = require('../middleware/errorHandler');
-const config = require('../config');
+const { asyncHandler } = require('../middleware/errorHandler');
 const WebhookController = require('../controllers/WebhookController');
 
 const router = express.Router();
-
-// Webhook validation schemas
-const webhookCreateSchema = Joi.object({
-  name: Joi.string().min(1).max(100).required(),
-  url: Joi.string().uri().required(),
-  events: Joi.array().items(Joi.string().valid(...config.supportedEventTypes)).min(1).required(),
-  active: Joi.boolean().default(true),
-  secret: Joi.string().min(8).max(100),
-  filters: Joi.object({
-    projects: Joi.array().items(Joi.string()),
-    issueTypes: Joi.array().items(Joi.string()),
-    customFilters: Joi.object()
-  }).default({}),
-  headers: Joi.object().default({}),
-  retryConfig: Joi.object({
-    maxAttempts: Joi.number().integer().min(1).max(10).default(config.delivery.retry.maxAttempts),
-    backoffMultiplier: Joi.number().min(1).max(10).default(config.delivery.retry.backoffMultiplier)
-  }).default({})
-});
-
-const webhookUpdateSchema = Joi.object({
-  name: Joi.string().min(1).max(100),
-  url: Joi.string().uri(),
-  events: Joi.array().items(Joi.string().valid(...config.supportedEventTypes)).min(1),
-  active: Joi.boolean(),
-  secret: Joi.string().min(8).max(100),
-  filters: Joi.object({
-    projects: Joi.array().items(Joi.string()),
-    issueTypes: Joi.array().items(Joi.string()),
-    customFilters: Joi.object()
-  }),
-  headers: Joi.object(),
-  retryConfig: Joi.object({
-    maxAttempts: Joi.number().integer().min(1).max(10),
-    backoffMultiplier: Joi.number().min(1).max(10)
-  })
-});
 
 // Initialize controller with services
 const initController = (req, res, next) => {

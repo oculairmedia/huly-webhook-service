@@ -118,7 +118,7 @@ class EventPayloadTransformerService {
    * @param {Object} webhook - Webhook configuration
    * @returns {Object} - Base payload structure
    */
-  createBasePayload (changeEvent, eventDetails, webhook) {
+  createBasePayload (changeEvent, eventDetails, _webhook) {
     const timestamp = new Date().toISOString();
     const eventId = this.generateEventId(changeEvent);
 
@@ -180,7 +180,7 @@ class EventPayloadTransformerService {
    * @param {Object} webhook - Webhook configuration
    * @returns {Object} - Transformed data
    */
-  transformGenericEvent (changeEvent, eventDetails, webhook) {
+  transformGenericEvent (changeEvent, _eventDetails, _webhook) {
     const data = {
       document: this.transformDocument(changeEvent.fullDocument),
       previousDocument: this.transformDocument(changeEvent.fullDocumentBeforeChange),
@@ -197,7 +197,7 @@ class EventPayloadTransformerService {
    * @param {Object} webhook - Webhook configuration
    * @returns {Object} - Transformed issue data
    */
-  transformIssueEvent (changeEvent, eventDetails, webhook) {
+  transformIssueEvent (changeEvent, _eventDetails, _webhook) {
     const document = changeEvent.fullDocument;
     const previousDocument = changeEvent.fullDocumentBeforeChange;
 
@@ -260,7 +260,7 @@ class EventPayloadTransformerService {
    * @param {Object} webhook - Webhook configuration
    * @returns {Object} - Transformed project data
    */
-  transformProjectEvent (changeEvent, eventDetails, webhook) {
+  transformProjectEvent (changeEvent, _eventDetails, _webhook) {
     const document = changeEvent.fullDocument;
     const previousDocument = changeEvent.fullDocumentBeforeChange;
 
@@ -314,7 +314,7 @@ class EventPayloadTransformerService {
    * @param {Object} webhook - Webhook configuration
    * @returns {Object} - Transformed user data
    */
-  transformUserEvent (changeEvent, eventDetails, webhook) {
+  transformUserEvent (changeEvent, _eventDetails, _webhook) {
     const document = changeEvent.fullDocument;
     const previousDocument = changeEvent.fullDocumentBeforeChange;
 
@@ -360,7 +360,7 @@ class EventPayloadTransformerService {
    * @param {Object} webhook - Webhook configuration
    * @returns {Object} - Transformed task data
    */
-  transformTaskEvent (changeEvent, eventDetails, webhook) {
+  transformTaskEvent (changeEvent, _eventDetails, _webhook) {
     const document = changeEvent.fullDocument;
     const previousDocument = changeEvent.fullDocumentBeforeChange;
 
@@ -415,7 +415,7 @@ class EventPayloadTransformerService {
    * @param {Object} webhook - Webhook configuration
    * @returns {Object} - Transformed comment data
    */
-  transformCommentEvent (changeEvent, eventDetails, webhook) {
+  transformCommentEvent (changeEvent, _eventDetails, _webhook) {
     const document = changeEvent.fullDocument;
 
     const commentData = {
@@ -441,7 +441,7 @@ class EventPayloadTransformerService {
    * @param {Object} webhook - Webhook configuration
    * @returns {Object} - Transformed attachment data
    */
-  transformAttachmentEvent (changeEvent, eventDetails, webhook) {
+  transformAttachmentEvent (changeEvent, _eventDetails, _webhook) {
     const document = changeEvent.fullDocument;
 
     const attachmentData = {
@@ -682,7 +682,7 @@ class EventPayloadTransformerService {
    * @param {Object} webhook - Webhook configuration
    * @returns {Object} - Filtered payload
    */
-  filterSensitiveFields (payload, webhook) {
+  filterSensitiveFields (payload, _webhook) {
     const sensitiveFields = [
       'password', 'token', 'secret', 'key', 'credential',
       'email', 'phone', 'address', 'ssn', 'birthdate'
@@ -697,7 +697,7 @@ class EventPayloadTransformerService {
    * @param {Object} webhook - Webhook configuration
    * @returns {Object} - Filtered payload
    */
-  filterMinimalFields (payload, webhook) {
+  filterMinimalFields (payload, _webhook) {
     const minimalFields = ['id', 'event', 'timestamp', 'data.id', 'data.type', 'data.operation'];
     return this.keepOnlyFields(payload, minimalFields);
   }
@@ -708,7 +708,7 @@ class EventPayloadTransformerService {
    * @param {Object} webhook - Webhook configuration
    * @returns {Object} - Filtered payload
    */
-  filterDetailedFields (payload, webhook) {
+  filterDetailedFields (payload, _webhook) {
     // Return full payload for detailed filter
     return payload;
   }

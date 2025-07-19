@@ -124,7 +124,7 @@ const rateLimitMiddleware = (req, res, next) => {
 /**
  * Rate limit bypass for specific IPs or API keys
  */
-rateLimitMiddleware.bypass = (req) => {
+rateLimitMiddleware.bypass = (_req) => {
   // Add bypass logic here if needed
   // For example, bypass for certain API keys or IPs
   return false;

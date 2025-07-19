@@ -1,6 +1,8 @@
 /**
  * Resume Token Service for Huly Webhook Service
  * Handles persistence and recovery of MongoDB Change Stream resume tokens
+ *
+ * Refactored to use dependency injection for better testability
  */
 
 const fs = require('fs').promises;
@@ -8,9 +10,10 @@ const path = require('path');
 const logger = require('../utils/logger');
 
 class ResumeTokenService {
-  constructor (config, databaseService) {
+  constructor (config, databaseService, fileSystem = fs) {
     this.config = config;
     this.db = databaseService;
+    this.fs = fileSystem; // Injected for testability
     this.tokenFilePath = config.resumeToken?.filePath || './data/resume_token.json';
     this.persistenceMode = config.resumeToken?.mode || 'file'; // 'file' or 'database'
     this.saveInterval = config.resumeToken?.saveInterval || 5000; // 5 seconds
@@ -22,20 +25,25 @@ class ResumeTokenService {
     this.lastSaved = null;
     this.pendingSave = false;
     this.saveTimer = null;
-
-    this.initialize();
+    this.periodicSaveInterval = null;
+    this.initialized = false;
   }
 
   /**
    * Initialize the resume token service
    */
   async initialize () {
+    if (this.initialized) {
+      logger.warn('Resume Token Service already initialized');
+      return;
+    }
+
     try {
       logger.info('Initializing Resume Token Service...');
 
       // Create data directory if it doesn't exist
       const dataDir = path.dirname(this.tokenFilePath);
-      await fs.mkdir(dataDir, { recursive: true });
+      await this.fs.mkdir(dataDir, { recursive: true });
 
       // Load existing token
       await this.loadResumeToken();
@@ -43,6 +51,7 @@ class ResumeTokenService {
       // Start periodic saving
       this.startPeriodicSaving();
 
+      this.initialized = true;
       logger.info('Resume Token Service initialized successfully');
     } catch (error) {
       logger.error('Failed to initialize Resume Token Service:', error);
@@ -73,7 +82,7 @@ class ResumeTokenService {
    */
   async loadTokenFromFile () {
     try {
-      const data = await fs.readFile(this.tokenFilePath, 'utf8');
+      const data = await this.fs.readFile(this.tokenFilePath, 'utf8');
       const tokenData = JSON.parse(data);
 
       if (tokenData.token) {
@@ -192,16 +201,16 @@ class ResumeTokenService {
 
     try {
       // Write to temporary file first
-      await fs.writeFile(tempFilePath, JSON.stringify(tokenData, null, 2));
+      await this.fs.writeFile(tempFilePath, JSON.stringify(tokenData, null, 2));
 
       // Atomic rename
-      await fs.rename(tempFilePath, this.tokenFilePath);
+      await this.fs.rename(tempFilePath, this.tokenFilePath);
 
       logger.debug('Resume token saved to file');
     } catch (error) {
       // Clean up temporary file on error
       try {
-        await fs.unlink(tempFilePath);
+        await this.fs.unlink(tempFilePath);
       } catch (cleanupError) {
         // Ignore cleanup errors
       }
@@ -221,9 +230,11 @@ class ResumeTokenService {
       updatedAt: new Date()
     };
 
-    await this.db.upsert('resume_tokens',
+    await this.db.updateOne(
+      'resume_tokens',
       { service: 'webhook-change-stream' },
-      tokenData
+      { $set: tokenData },
+      { upsert: true }
     );
 
     logger.debug('Resume token saved to database');
@@ -277,7 +288,7 @@ class ResumeTokenService {
    */
   startPeriodicSaving () {
     // Save every 30 seconds if there's a current token
-    setInterval(async () => {
+    this.periodicSaveInterval = setInterval(async () => {
       if (this.currentToken && this.pendingSave) {
         try {
           await this.persistToken();
@@ -319,7 +330,7 @@ class ResumeTokenService {
         await this.db.deleteMany('resume_tokens', { service: 'webhook-change-stream' });
       } else {
         try {
-          await fs.unlink(this.tokenFilePath);
+          await this.fs.unlink(this.tokenFilePath);
         } catch (error) {
           if (error.code !== 'ENOENT') {
             throw error;
@@ -384,7 +395,7 @@ class ResumeTokenService {
       };
 
       const backupPath = this.tokenFilePath.replace('.json', `_backup_${Date.now()}.json`);
-      await fs.writeFile(backupPath, JSON.stringify(backup, null, 2));
+      await this.fs.writeFile(backupPath, JSON.stringify(backup, null, 2));
 
       logger.info('Resume token backed up to:', backupPath);
       return { success: true, backupPath };
@@ -401,7 +412,7 @@ class ResumeTokenService {
    */
   async restoreToken (backupPath) {
     try {
-      const data = await fs.readFile(backupPath, 'utf8');
+      const data = await this.fs.readFile(backupPath, 'utf8');
       const backup = JSON.parse(data);
 
       if (backup.token) {
@@ -429,7 +440,7 @@ class ResumeTokenService {
   async cleanupBackups (maxAge = 30) {
     try {
       const dataDir = path.dirname(this.tokenFilePath);
-      const files = await fs.readdir(dataDir);
+      const files = await this.fs.readdir(dataDir);
 
       const backupFiles = files.filter(file =>
         file.includes('_backup_') && file.endsWith('.json')
@@ -440,10 +451,10 @@ class ResumeTokenService {
 
       for (const file of backupFiles) {
         const filePath = path.join(dataDir, file);
-        const stats = await fs.stat(filePath);
+        const stats = await this.fs.stat(filePath);
 
         if (stats.mtime.getTime() < cutoffTime) {
-          await fs.unlink(filePath);
+          await this.fs.unlink(filePath);
           cleaned++;
         }
       }
@@ -469,6 +480,13 @@ class ResumeTokenService {
       // Clear any pending save timer
       if (this.saveTimer) {
         clearTimeout(this.saveTimer);
+        this.saveTimer = null;
+      }
+
+      // Clear periodic save interval
+      if (this.periodicSaveInterval) {
+        clearInterval(this.periodicSaveInterval);
+        this.periodicSaveInterval = null;
       }
 
       // Save current token if pending
@@ -476,6 +494,7 @@ class ResumeTokenService {
         await this.persistToken();
       }
 
+      this.initialized = false;
       logger.info('Resume Token Service shut down successfully');
     } catch (error) {
       logger.error('Error shutting down Resume Token Service:', error);

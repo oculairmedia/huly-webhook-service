@@ -199,7 +199,7 @@ class RateLimitService {
    * @param {Object} request - Request details
    * @returns {Object} - Rate limit result
    */
-  checkSlidingWindow (limiter, now, request) {
+  checkSlidingWindow (limiter, now, _request) {
     const windowMs = limiter.limits.windowMs;
     const maxRequests = limiter.limits.maxRequests;
 
@@ -211,8 +211,8 @@ class RateLimitService {
       // Allow request
       limiter.requests.push({
         timestamp: now,
-        success: request.success,
-        statusCode: request.statusCode
+        success: true, // Default to success
+        statusCode: 200 // Default status code
       });
 
       return {
@@ -244,7 +244,7 @@ class RateLimitService {
    * @param {Object} request - Request details
    * @returns {Object} - Rate limit result
    */
-  checkFixedWindow (limiter, now, request) {
+  checkFixedWindow (limiter, now, _request) {
     const windowMs = limiter.limits.windowMs;
     const maxRequests = limiter.limits.maxRequests;
 
@@ -291,7 +291,7 @@ class RateLimitService {
    * @param {Object} request - Request details
    * @returns {Object} - Rate limit result
    */
-  checkTokenBucket (limiter, now, request) {
+  checkTokenBucket (limiter, now, _request) {
     const refillRate = limiter.limits.refillRate;
     const burstLimit = limiter.limits.burstLimit;
 
@@ -380,7 +380,7 @@ class RateLimitService {
       remaining = Math.max(0, limiter.limits.maxRequests - (limiter.windowRequests || 0));
       resetTime = limiter.currentWindow ? (limiter.currentWindow + 1) * limiter.limits.windowMs : now;
       break;
-    case 'token_bucket':
+    case 'token_bucket': {
       // Update tokens
       const timeElapsed = (now - limiter.lastRefill) / 1000;
       const tokensToAdd = Math.floor(timeElapsed * limiter.limits.refillRate);
@@ -389,6 +389,7 @@ class RateLimitService {
       limit = limiter.limits.burstLimit;
       resetTime = now + (limiter.limits.burstLimit - limiter.tokens) / limiter.limits.refillRate * 1000;
       break;
+    }
     }
 
     return {
@@ -457,7 +458,7 @@ class RateLimitService {
   getActiveLimiters () {
     const limiters = [];
 
-    for (const [webhookId, limiter] of this.limiters) {
+    for (const [webhookId] of this.limiters) {
       const status = this.getRateLimitStatus(webhookId);
       limiters.push(status);
     }

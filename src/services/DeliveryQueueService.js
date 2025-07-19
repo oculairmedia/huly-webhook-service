@@ -48,7 +48,7 @@ class DeliveryQueueService extends EventEmitter {
    * Initialize priority queues
    */
   initializePriorityQueues () {
-    for (const [name, priority] of Object.entries(this.priorities)) {
+    for (const [, priority] of Object.entries(this.priorities)) {
       this.priorityQueues.set(priority, []);
     }
   }
@@ -477,7 +477,11 @@ class DeliveryQueueService extends EventEmitter {
 
     // Validate URL format
     try {
-      new URL(delivery.url);
+      const url = new URL(delivery.url);
+      // Ensure URL is valid
+      if (!url.protocol || !url.hostname) {
+        throw new Error('Invalid URL format');
+      }
     } catch (error) {
       throw new Error('Invalid URL format');
     }
