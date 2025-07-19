@@ -558,7 +558,7 @@ class EventRoutingService {
    * @param {Object} changeEvent - Change event
    * @returns {boolean} - Whether rule matches
    */
-  evaluateCustomFunction (rule, collection, eventType, entityType, changeEvent) {
+  evaluateCustomFunction (rule, _collection, _eventType, _entityType, _changeEvent) {
     try {
       // This would be implemented with a safe eval or plugin system
       // For now, return true to allow the event through

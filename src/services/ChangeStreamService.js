@@ -9,7 +9,7 @@ const logger = require('../utils/logger');
 const ResumeTokenService = require('./ResumeTokenService');
 
 class ChangeStreamService extends EventEmitter {
-  constructor(config, databaseService) {
+  constructor (config, databaseService) {
     super();
     this.config = config;
     this.db = databaseService;
@@ -28,27 +28,27 @@ class ChangeStreamService extends EventEmitter {
       eventsByCollection: {},
       processingTimes: []
     };
-    
+
     // Initialize Resume Token Service
     this.resumeTokenService = new ResumeTokenService(config, databaseService);
   }
 
-  async initialize() {
+  async initialize () {
     try {
       logger.info('Initializing Change Stream Service...');
-      
+
       // Initialize Resume Token Service
       await this.resumeTokenService.initialize();
-      
+
       // Load existing resume token
       this.resumeToken = await this.resumeTokenService.loadResumeToken();
-      
+
       // Connect to MongoDB
       this.client = new MongoClient(this.config.database.url, {
         useUnifiedTopology: true,
         maxPoolSize: 10,
         serverSelectionTimeoutMS: 5000,
-        socketTimeoutMS: 45000,
+        socketTimeoutMS: 45000
       });
 
       await this.client.connect();
@@ -56,7 +56,7 @@ class ChangeStreamService extends EventEmitter {
 
       // Start the change stream
       await this.startChangeStream();
-      
+
       this.isRunning = true;
       logger.info('Change Stream Service initialized successfully');
     } catch (error) {
@@ -65,10 +65,10 @@ class ChangeStreamService extends EventEmitter {
     }
   }
 
-  async startChangeStream() {
+  async startChangeStream () {
     try {
       const db = this.client.db(this.config.database.name);
-      
+
       // Define the change stream options
       const options = {
         fullDocument: 'updateLookup',
@@ -115,10 +115,10 @@ class ChangeStreamService extends EventEmitter {
     }
   }
 
-  async handleChangeEvent(changeEvent) {
+  async handleChangeEvent (changeEvent) {
     try {
       const startTime = Date.now();
-      
+
       logger.debug('Change event received:', {
         operationType: changeEvent.operationType,
         ns: changeEvent.ns,
@@ -127,10 +127,10 @@ class ChangeStreamService extends EventEmitter {
 
       // Store the resume token for fault tolerance
       this.resumeToken = changeEvent._id;
-      
+
       // Save resume token using ResumeTokenService
       await this.resumeTokenService.saveResumeToken(changeEvent._id);
-      
+
       this.eventsProcessed++;
       this.lastEvent = {
         operationType: changeEvent.operationType,
@@ -146,30 +146,29 @@ class ChangeStreamService extends EventEmitter {
 
       // Update reconnection state on successful event
       this.reconnectAttempts = 0;
-      
+
       const processingTime = Date.now() - startTime;
       this.stats.processingTimes.push(processingTime);
-      
+
       // Keep only last 100 processing times for average calculation
       if (this.stats.processingTimes.length > 100) {
         this.stats.processingTimes.shift();
       }
-      
     } catch (error) {
       logger.error('Error handling change event:', error);
     }
   }
 
-  updateStats(changeEvent, startTime) {
+  updateStats (changeEvent, _startTime) {
     this.stats.totalEvents++;
-    
+
     // Update event type statistics
     const operationType = changeEvent.operationType;
     if (!this.stats.eventsByType[operationType]) {
       this.stats.eventsByType[operationType] = 0;
     }
     this.stats.eventsByType[operationType]++;
-    
+
     // Update collection statistics
     const collection = changeEvent.ns ? changeEvent.ns.coll : 'unknown';
     if (!this.stats.eventsByCollection[collection]) {
@@ -178,9 +177,9 @@ class ChangeStreamService extends EventEmitter {
     this.stats.eventsByCollection[collection]++;
   }
 
-  handleChangeStreamError(error) {
+  handleChangeStreamError (error) {
     logger.error('Change stream error occurred:', error);
-    
+
     // Emit error event for external handling
     this.emit('error', error);
 
@@ -190,7 +189,7 @@ class ChangeStreamService extends EventEmitter {
     }
   }
 
-  async attemptReconnection() {
+  async attemptReconnection () {
     if (this.reconnectAttempts >= this.maxReconnectAttempts) {
       logger.error('Max reconnection attempts reached, stopping Change Stream Service');
       this.emit('maxReconnectAttemptsReached');
@@ -199,7 +198,7 @@ class ChangeStreamService extends EventEmitter {
 
     this.reconnectAttempts++;
     const delay = this.reconnectDelay * Math.pow(2, this.reconnectAttempts - 1);
-    
+
     logger.info(`Attempting to reconnect change stream (attempt ${this.reconnectAttempts}/${this.maxReconnectAttempts}) in ${delay}ms`);
 
     setTimeout(async () => {
@@ -214,7 +213,7 @@ class ChangeStreamService extends EventEmitter {
     }, delay);
   }
 
-  async closeChangeStream() {
+  async closeChangeStream () {
     if (this.changeStream) {
       try {
         await this.changeStream.close();
@@ -226,24 +225,24 @@ class ChangeStreamService extends EventEmitter {
     }
   }
 
-  async shutdown() {
+  async shutdown () {
     try {
       logger.info('Shutting down Change Stream Service...');
       this.isRunning = false;
-      
+
       await this.closeChangeStream();
-      
+
       if (this.client) {
         await this.client.close();
         this.client = null;
         logger.info('MongoDB client disconnected');
       }
-      
+
       // Shutdown Resume Token Service
       if (this.resumeTokenService) {
         await this.resumeTokenService.shutdown();
       }
-      
+
       logger.info('Change Stream Service shut down successfully');
     } catch (error) {
       logger.error('Error during Change Stream Service shutdown:', error);
@@ -252,19 +251,19 @@ class ChangeStreamService extends EventEmitter {
   }
 
   // Legacy methods for backward compatibility
-  async start() {
+  async start () {
     await this.initialize();
   }
 
-  async stop() {
+  async stop () {
     await this.shutdown();
   }
 
-  isActive() {
+  isActive () {
     return this.isRunning;
   }
 
-  getStatus() {
+  getStatus () {
     return {
       active: this.isRunning,
       connected: this.client && this.client.topology && this.client.topology.isConnected(),
@@ -275,12 +274,12 @@ class ChangeStreamService extends EventEmitter {
     };
   }
 
-  async getPerformanceStats(period) {
+  async getPerformanceStats (_period) {
     const processingTimes = this.stats.processingTimes;
-    const averageProcessingTime = processingTimes.length > 0 
-      ? processingTimes.reduce((a, b) => a + b, 0) / processingTimes.length 
+    const averageProcessingTime = processingTimes.length > 0
+      ? processingTimes.reduce((a, b) => a + b, 0) / processingTimes.length
       : 0;
-    
+
     return {
       eventsProcessed: this.stats.totalEvents,
       averageProcessingTime,
@@ -288,7 +287,7 @@ class ChangeStreamService extends EventEmitter {
     };
   }
 
-  async getEventStats(query) {
+  async getEventStats (_query) {
     return {
       totalEvents: this.stats.totalEvents,
       eventsByType: { ...this.stats.eventsByType },
@@ -297,12 +296,12 @@ class ChangeStreamService extends EventEmitter {
   }
 
   // Method to get the current resume token (for persistence)
-  getResumeToken() {
+  getResumeToken () {
     return this.resumeToken;
   }
 
   // Method to set resume token (for loading from persistence)
-  setResumeToken(token) {
+  setResumeToken (token) {
     this.resumeToken = token;
     logger.info('Resume token set for change stream recovery');
   }

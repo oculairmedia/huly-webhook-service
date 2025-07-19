@@ -135,7 +135,7 @@ class CryptoUtils {
   static secureRandom (min = 0, max = 1) {
     const range = max - min;
     const bytesNeeded = Math.ceil(Math.log2(range) / 8);
-    const maxValue = Math.pow(256, bytesNeeded);
+    // const maxValue = Math.pow(256, bytesNeeded); // Not used in calculation
     const randomBytes = crypto.randomBytes(bytesNeeded);
 
     let randomValue = 0;
@@ -168,7 +168,7 @@ class CryptoUtils {
    */
   static encrypt (data, key) {
     const iv = crypto.randomBytes(16);
-    const cipher = crypto.createCipher('aes-256-gcm', key);
+    const cipher = crypto.createCipheriv('aes-256-gcm', Buffer.from(key).slice(0, 32), iv);
     cipher.setAAD(Buffer.from('webhook-service', 'utf8'));
 
     let encrypted = cipher.update(data, 'utf8', 'hex');
@@ -192,7 +192,7 @@ class CryptoUtils {
    * @returns {string} The decrypted data
    */
   static decrypt (encrypted, key, iv, authTag) {
-    const decipher = crypto.createDecipher('aes-256-gcm', key);
+    const decipher = crypto.createDecipheriv('aes-256-gcm', Buffer.from(key).slice(0, 32), Buffer.from(iv, 'hex'));
     decipher.setAAD(Buffer.from('webhook-service', 'utf8'));
     decipher.setAuthTag(Buffer.from(authTag, 'hex'));
 

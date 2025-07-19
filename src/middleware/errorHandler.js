@@ -122,7 +122,7 @@ const getStatusCode = (error) => {
 /**
  * Log error with appropriate level
  */
-const logError = (error, req, res) => {
+const logError = (error, req, _res) => {
   const statusCode = getStatusCode(error);
   const logData = {
     error: error.message,

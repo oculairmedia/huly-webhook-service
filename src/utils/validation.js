@@ -266,6 +266,7 @@ class ValidationUtils {
     if (typeof input !== 'string') return '';
 
     // Remove null bytes and control characters
+    // eslint-disable-next-line no-control-regex
     let sanitized = input.replace(/[\x00-\x1F\x7F]/g, '');
 
     // Trim whitespace

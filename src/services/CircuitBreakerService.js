@@ -416,7 +416,7 @@ class CircuitBreakerService extends EventEmitter {
     }
 
     const recentCalls = circuitBreaker.recentCalls;
-    const successfulCalls = recentCalls.filter(c => c.success).length;
+    // const successfulCalls = recentCalls.filter(c => c.success).length; // Not used in calculation
     const failedCalls = recentCalls.filter(c => !c.success).length;
     const slowCalls = recentCalls.filter(c => c.slow).length;
 
@@ -539,7 +539,7 @@ class CircuitBreakerService extends EventEmitter {
   getActiveCircuitBreakers () {
     const circuitBreakers = [];
 
-    for (const [webhookId, circuitBreaker] of this.circuitBreakers) {
+    for (const [webhookId] of this.circuitBreakers) {
       const status = this.getCircuitBreakerStatus(webhookId);
       circuitBreakers.push(status);
     }
@@ -563,7 +563,7 @@ class CircuitBreakerService extends EventEmitter {
   updateCircuitBreakerStats () {
     for (const [, circuitBreaker] of this.circuitBreakers) {
       const recentCalls = circuitBreaker.recentCalls;
-      const successfulCalls = recentCalls.filter(c => c.success).length;
+      // const successfulCalls = recentCalls.filter(c => c.success).length; // Not used
       const failedCalls = recentCalls.filter(c => !c.success).length;
       const slowCalls = recentCalls.filter(c => c.slow).length;
 
@@ -593,7 +593,7 @@ class CircuitBreakerService extends EventEmitter {
     } = testOptions;
 
     const results = [];
-    const circuitBreaker = this.getOrCreateCircuitBreaker(webhookId, webhook);
+    // const circuitBreaker = this.getOrCreateCircuitBreaker(webhookId, webhook); // Not used
 
     // Simulate successful calls
     for (let i = 0; i < successfulCalls; i++) {

@@ -446,7 +446,7 @@ class DeliveryService {
    * @param {Object} query - Query parameters
    * @returns {Object} - Detailed statistics
    */
-  async getDetailedStats (query) {
+  async getDetailedStats (_query) {
     const responseTimes = this.stats.responseTimes;
     const averageResponseTime = responseTimes.length > 0
       ? responseTimes.reduce((a, b) => a + b, 0) / responseTimes.length
@@ -510,7 +510,7 @@ class DeliveryService {
    * @param {Object} query - Query parameters
    * @returns {Object} - Error statistics
    */
-  async getErrorStats (query) {
+  async getErrorStats (_query) {
     const totalDeliveries = this.stats.totalDeliveries;
     const errorRate = totalDeliveries > 0 ? this.stats.failed / totalDeliveries : 0;
 

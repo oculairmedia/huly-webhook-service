@@ -78,7 +78,7 @@ class EventTypeDetectionService {
       return `${entityType}.replaced`;
     });
 
-    this.eventTypeRules.set('invalidate', (changeEvent) => {
+    this.eventTypeRules.set('invalidate', (_changeEvent) => {
       return 'collection.invalidated';
     });
 
